@@ -3,10 +3,13 @@ package main
 import (
 	"bufio"
 	"fmt"
-	"github.com/agomesd/go-pokedex/consts"
-	"github.com/agomesd/go-pokedex/poke-api"
-	"github.com/agomesd/go-pokedex/utils"
+	"math/rand"
 	"os"
+
+	"github.com/agomesd/go-pokedex/consts"
+	"github.com/agomesd/go-pokedex/pokeapi"
+
+	"github.com/agomesd/go-pokedex/utils"
 )
 
 type config struct {
@@ -17,8 +20,10 @@ type config struct {
 type cliCommand struct {
 	name        string
 	description string
-	callback    func(*config) error
+	callback    func(config *config, location string) error
 }
+
+var caughtPokemon = make(map[string]pokeapi.PokemonInfo)
 
 func main() {
 	scanner := bufio.NewScanner(os.Stdin)
@@ -53,29 +58,46 @@ func main() {
 		callback:    commandMapBack,
 	}
 
+	commands["explore"] = cliCommand{
+		name:        "explore",
+		description: "It takes the name of a location area and lists all the Pokémon located there",
+		callback:    commandExplore,
+	}
+
+	commands["catch"] = cliCommand{
+		name:        "catch",
+		description: "Allows the user to try and catch a pokemon",
+		callback:    commandCatch,
+	}
+
 	for scanner.Scan() {
 		userInput := scanner.Text()
 		fmt.Print("Pokedex > ")
 		cleaned := utils.CleanInput(userInput)
 		command, ok := commands[cleaned[0]]
+		var arg string
+		if len(cleaned) == 2 {
+			arg = cleaned[1]
+		}
+
 		if !ok {
 			fmt.Println("Unknown command")
 			return
 		}
 
-		command.callback(&config)
+		command.callback(&config, arg)
 
 	}
 }
 
-func commandExit(c *config) error {
+func commandExit(c *config, location string) error {
 	fmt.Println("Closing the Pokedex... Goodbye!")
 	os.Exit(0)
 	return nil
 }
 
-func commandHelp(commands map[string]cliCommand) func(c *config) error {
-	return func(c *config) error {
+func commandHelp(commands map[string]cliCommand) func(c *config, location string) error {
+	return func(c *config, location string) error {
 		fmt.Println("")
 		fmt.Println("Welcome to the Pokedex!")
 		fmt.Println("Usage:")
@@ -87,7 +109,11 @@ func commandHelp(commands map[string]cliCommand) func(c *config) error {
 	}
 }
 
-func commandMap(c *config) error {
+func commandMap(c *config, location string) error {
+	if len(location) == 0 {
+		fmt.Println("please enter location")
+		return nil
+	}
 	locationAreas, err := pokeapi.GetLocationAreas(c.Next)
 	if err != nil {
 		return err
@@ -99,7 +125,7 @@ func commandMap(c *config) error {
 	return nil
 }
 
-func commandMapBack(c *config) error {
+func commandMapBack(c *config, location string) error {
 	locationAreas, err := pokeapi.GetLocationAreas(c.Previous)
 	if err != nil {
 		return err
@@ -112,4 +138,43 @@ func commandMapBack(c *config) error {
 
 	return nil
 
+}
+
+func commandExplore(c *config, location string) error {
+	if len(location) == 0 {
+		fmt.Println("please enter location")
+		return nil
+	}
+	fmt.Println("")
+	fmt.Printf("Exploring %s...\n", location)
+	locationAreasInfo, err := pokeapi.GetLocationAreaInfo(location)
+	if err != nil {
+		return err
+	}
+	pokeapi.PrintLocationAreasPokemon(locationAreasInfo)
+
+	return nil
+}
+
+func commandCatch(c *config, pokemon string) error {
+	if len(pokemon) == 0 {
+		fmt.Println("enter a pokemon name")
+		return nil
+	}
+	fmt.Printf("Throwing a Pokeball at %s...\n", pokemon)
+	pokemonInfo, err := pokeapi.GetPokemonInfo(pokemon)
+	if err != nil {
+		return err
+	}
+
+	roll := rand.Float64()
+	caught := utils.TryCatchPokemon(roll, pokemonInfo.BaseExperience)
+	if caught {
+		fmt.Printf("%s was caught!\n", pokemon)
+		caughtPokemon[pokemon] = pokemonInfo
+	} else {
+		fmt.Printf("%s escaped!\n", pokemon)
+	}
+
+	return nil
 }

@@ -1,4 +1,8 @@
+.PHONY: test
+
 test:
 	go test ./...
 
-.PHONY: test
+run:
+	./go-pokedex
+
