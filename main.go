@@ -76,6 +76,12 @@ func main() {
 		callback:    commandInspect,
 	}
 
+	commands["pokedex"] = cliCommand{
+		name:        "pokedex",
+		description: "Prints a list of all the names of the Pokemon the user has caught.",
+		callback:    commandPokedex,
+	}
+
 	for scanner.Scan() {
 		userInput := scanner.Text()
 		fmt.Print("Pokedex > ")
@@ -178,6 +184,7 @@ func commandCatch(c *config, pokemon string) error {
 	if caught {
 		fmt.Printf("%s was caught!\n", pokemon)
 		caughtPokemon[pokemon] = pokemonInfo
+		fmt.Println("You may now inspect it with the inspect command.")
 	} else {
 		fmt.Printf("%s escaped!\n", pokemon)
 	}
@@ -192,5 +199,14 @@ func commandInspect(c *config, pokemon string) error {
 		return nil
 	}
 	utils.PrintInfo(caught)
+	return nil
+}
+
+func commandPokedex(c *config, str string) error {
+	fmt.Println("pokedex")
+	fmt.Println("Your Pokedex:")
+	for pokemon := range caughtPokemon {
+		fmt.Printf(" - %s\n", pokemon)
+	}
 	return nil
 }
