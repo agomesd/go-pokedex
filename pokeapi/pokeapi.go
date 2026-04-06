@@ -70,6 +70,15 @@ type PokemonInfo struct {
 		GameIndex int         `json:"game_index"`
 		Version   PokeAPIItem `json:"version"`
 	} `json:"game_indices"`
+	Stats []struct {
+		BaseStat int         `json:"base_stat"`
+		Effort   int         `json:"effort"`
+		Stat     PokeAPIItem `json:"stat"`
+	} `json:"stats"`
+	Types []struct {
+		Slot int         `json:"slot"`
+		Type PokeAPIItem `json:"type"`
+	} `json:"types"`
 }
 
 func GetLocationAreas(url string) (GetLocationAreasResponse, error) {
